@@ -8,6 +8,8 @@
 .vscode/
 *.user
 CMakeUserPresets.json
+# Old Visual Studio CMake config; this project uses CMakePresets.json instead.
+CMakeSettings.json
 
 # Misc
 compile_commands.json
