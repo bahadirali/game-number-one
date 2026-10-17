@@ -1,0 +1,15 @@
+# Build output
+/out/
+/build/
+/build-*/
+
+# Visual Studio / VS Code local state
+.vs/
+.vscode/
+*.user
+CMakeUserPresets.json
+
+# Misc
+compile_commands.json
+*.log
+.DS_Store
