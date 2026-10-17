@@ -45,6 +45,9 @@ void Input::on_key_up(Key key) {
 
 void Input::release_all() {
     key_down_.fill(false);
+    // Drop pending taps too, so a key pressed just before focus was lost
+    // doesn't still fire on the next tick.
+    key_tapped_.fill(false);
 }
 
 void Input::tick() {

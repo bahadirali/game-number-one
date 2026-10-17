@@ -60,6 +60,14 @@ bool pump_events(Input& input) {
 } // namespace
 
 int run(const AppConfig& config, Game& game) {
+    // Zero would never update; a negative rate would make the tick length
+    // negative and trap the update loop forever.
+    if (config.updates_per_second <= 0) {
+        SDL_Log("AppConfig::updates_per_second must be positive, got %d",
+                config.updates_per_second);
+        return 1;
+    }
+
     SDL_SetMainReady();
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {

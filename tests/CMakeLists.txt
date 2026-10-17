@@ -3,6 +3,7 @@ add_executable(tests
     movement_tests.cpp
     level_tests.cpp
     input_tests.cpp
+    app_tests.cpp
 )
 target_link_libraries(tests PRIVATE game_logic engine::engine doctest::doctest project_options)
 

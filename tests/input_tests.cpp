@@ -54,6 +54,15 @@ TEST_CASE("a tap between two ticks still counts") {
     CHECK_FALSE(input.pressed(Action::Move));
 }
 
+TEST_CASE("losing focus cancels a press that hasn't been ticked yet") {
+    Input input = make_input();
+    input.on_key_down(Key::Right);
+    input.release_all();
+    input.tick();
+    CHECK_FALSE(input.pressed(Action::Move));
+    CHECK_FALSE(input.held(Action::Move));
+}
+
 TEST_CASE("unbound actions are never pressed") {
     Input input;
     input.tick();
