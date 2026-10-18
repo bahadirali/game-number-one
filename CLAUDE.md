@@ -75,3 +75,10 @@ Swap `debug` for `release` for an optimized build. Build output goes to
 - Warnings are on at a high level (`/W4`, `-Wall -Wextra …`); keep builds warning-free.
 - Every change to game rules comes with tests in `tests/`.
 - Before committing: build the `debug` preset and make sure `ctest --preset debug` passes.
+
+## Git workflow
+
+- Work in small steps, one milestone or fix at a time.
+- Commit directly on `main`, then push each finished, tested step to `origin main`
+  (github.com/bahadirali/game-number-one).
+- No branches or pull requests unless Bahadir asks for them.
