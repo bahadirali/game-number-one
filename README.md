@@ -5,7 +5,7 @@ engine that grows with it.
 
 Right now it's a two-player, turn-based duel on one keyboard (a prototype to test the
 idea). Players take turns making one move each: a step, which may push a block, or a
-pass. After 30 moves (15 each) the round ends and each player scores the empty cells
+pass. After 40 moves (20 each) the round ends and each player scores the empty cells
 they can still walk to. Cells both players can reach count for both, so you win by
 walling off space with blocks. Floor only you can reach is tinted in your colour; the
 strip at the bottom shows the moves left, then the winner's colour (grey for a draw).
