@@ -35,6 +35,10 @@ struct Match {
 // `total_moves` isn't positive.
 std::optional<Match> parse_match(std::span<const std::string_view> rows, int total_moves);
 
+// A fresh copy of `start` in which `first_player` makes the first move.
+// Alternating this between rounds evens out who moves first and who last.
+Match with_first_player(Match start, int first_player);
+
 bool is_over(const Match& match);
 
 // Moves the current player one step, pushing blocks like move_player. The

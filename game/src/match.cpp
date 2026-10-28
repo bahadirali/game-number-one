@@ -76,6 +76,11 @@ std::optional<Match> parse_match(std::span<const std::string_view> rows, int tot
                  {level->player, *second}, 0, total_moves};
 }
 
+Match with_first_player(Match start, int first_player) {
+    start.current = first_player;
+    return start;
+}
+
 bool is_over(const Match& match) {
     return match.moves_left <= 0;
 }

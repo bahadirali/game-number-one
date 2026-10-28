@@ -97,7 +97,9 @@ void DuelGame::update(const engine::Input& input) {
         return;
     }
     if (input.pressed(Action::Restart)) {
-        match_ = start_;
+        // Each new round the other player goes first.
+        first_player_ = (first_player_ + 1) % kPlayerCount;
+        match_ = with_first_player(start_, first_player_);
         ai_wait_ticks_ = 0;
         return;
     }
@@ -197,7 +199,8 @@ void DuelGame::render(engine::Renderer& renderer) {
         const float pip_w = strip_w / static_cast<float>(total);
         for (int i = 0; i < total; ++i) {
             const engine::Color color =
-                i < used ? kUsedMoveColor : kPlayerColors[i % kPlayerCount];
+                i < used ? kUsedMoveColor
+                         : kPlayerColors[(first_player_ + i) % kPlayerCount];
             renderer.fill_rect({static_cast<float>(i) * pip_w + 2.0f, pips_y, pip_w - 4.0f, pips_h},
                                color);
         }

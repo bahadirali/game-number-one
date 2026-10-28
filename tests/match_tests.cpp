@@ -228,3 +228,13 @@ TEST_CASE("a cell near both players' blocks goes to whoever has more of them") {
     match.block_owners = {0, 1, game::kNoOwner};  // neutral blocks don't count
     CHECK_FALSE(game::controller(match, middle).has_value());
 }
+
+TEST_CASE("with_first_player starts a fresh round with the given player to move") {
+    const auto start = make_match(std::array<std::string_view, 1>{"1...2"}, 4);
+    auto round = game::with_first_player(start, 1);
+    CHECK(round.current == 1);
+    CHECK(round.moves_left == 4);
+    CHECK(game::play_move(round, Direction::Left));
+    CHECK(round.players[1] == Cell{3, 0});
+    CHECK(round.current == 0);
+}

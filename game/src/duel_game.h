@@ -24,6 +24,7 @@ private:
     void announce_result() const;
 
     Match start_;  // kept for restarting
+    int first_player_ = 0;  // who started this round; R swaps it
     Match match_;
     bool ai_enabled_ = true;  // the AI plays player 2; Tab toggles it
     int ai_wait_ticks_ = 0;

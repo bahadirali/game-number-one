@@ -27,7 +27,7 @@ The one-player puzzle room from milestone 2 is still there: run `game.exe --puzz
 | Arrow keys | Player 2 (pink) moves |
 | Space      | Pass the turn |
 | Tab        | Switch player 2 between AI (default) and human |
-| R          | Restart the round |
+| R          | Start a new round (the other player moves first) |
 | Esc        | Quit   |
 
 In `--puzzle` mode, arrow keys or WASD move the single player.
