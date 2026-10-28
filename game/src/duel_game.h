@@ -10,6 +10,7 @@ namespace game {
 
 // Two players on one keyboard take turns pushing blocks to wall off space.
 // Player 1 uses WASD, player 2 the arrow keys; Space passes the turn.
+// By default the AI plays player 2; Tab switches between AI and human.
 class DuelGame : public engine::Game {
 public:
     explicit DuelGame(Match match) : start_(match), match_(std::move(match)) {}
@@ -24,6 +25,8 @@ private:
 
     Match start_;  // kept for restarting
     Match match_;
+    bool ai_enabled_ = true;  // the AI plays player 2; Tab toggles it
+    int ai_wait_ticks_ = 0;
     bool pass_was_held_ = false;
     bool quit_ = false;
 };

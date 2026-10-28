@@ -2,6 +2,7 @@
 
 #include <cstdio>
 
+#include "ai.h"
 #include "layout.h"
 
 namespace game {
@@ -18,15 +19,31 @@ enum class Action {
     P2Left,
     P2Right,
     Pass,
+    ToggleAi,
     Restart,
     Quit,
 };
 
 constexpr engine::Color kFloorColor{52, 56, 68};
 constexpr engine::Color kWallColor{118, 98, 82};
+constexpr int kAiPlayer = 1;       // the AI plays player 2
+constexpr int kAiDelayTicks = 20;  // a third of a second, so its moves can be followed
+
+// The window has one extra row of height, split into a strip above the board
+// (moves left) and a strip below it (score).
+constexpr float kStripHeight = kCellSize / 2.0f;
+
+// cell_rect, moved down below the top strip.
+engine::Rect board_rect(Cell cell, float inset = 0.0f) {
+    engine::Rect rect = cell_rect(cell, inset);
+    rect.y += kStripHeight;
+    return rect;
+}
+
 constexpr engine::Color kNeutralBlockColor{86, 152, 172};
 constexpr engine::Color kUsedMoveColor{36, 38, 46};
 constexpr engine::Color kDrawColor{150, 150, 150};
+constexpr engine::Color kMiddleTickColor{240, 240, 240};
 
 // Per player: the piece itself, the blocks they own, and a dim tint for the
 // floor they control.
@@ -69,6 +86,7 @@ void DuelGame::setup(engine::Input& input) {
     input.bind(Action::P2Left, Key::Left);
     input.bind(Action::P2Right, Key::Right);
     input.bind(Action::Pass, Key::Space);
+    input.bind(Action::ToggleAi, Key::Tab);
     input.bind(Action::Restart, Key::R);
     input.bind(Action::Quit, Key::Escape);
 }
@@ -80,7 +98,12 @@ void DuelGame::update(const engine::Input& input) {
     }
     if (input.pressed(Action::Restart)) {
         match_ = start_;
+        ai_wait_ticks_ = 0;
         return;
+    }
+    if (input.pressed(Action::ToggleAi)) {
+        ai_enabled_ = !ai_enabled_;
+        std::printf("AI %s.\n", ai_enabled_ ? "on" : "off");
     }
     if (is_over(match_)) {
         return;
@@ -92,7 +115,19 @@ void DuelGame::update(const engine::Input& input) {
     pass_was_held_ = input.held(Action::Pass);
 
     bool turn_taken = false;
-    if (fresh_pass) {
+    if (ai_enabled_ && match_.current == kAiPlayer) {
+        // Human keys are ignored on the AI's turn.
+        if (++ai_wait_ticks_ < kAiDelayTicks) {
+            return;
+        }
+        ai_wait_ticks_ = 0;
+        if (const auto direction = choose_move(match_)) {
+            turn_taken = play_move(match_, *direction);
+        } else {
+            pass_turn(match_);
+            turn_taken = true;
+        }
+    } else if (fresh_pass) {
         pass_turn(match_);
         turn_taken = true;
     } else {
@@ -126,45 +161,67 @@ void DuelGame::render(engine::Renderer& renderer) {
         for (int x = 0; x < grid.width(); ++x) {
             const Cell cell{x, y};
             if (grid.at(cell) == Tile::Wall) {
-                renderer.fill_rect(cell_rect(cell), kWallColor);
+                renderer.fill_rect(board_rect(cell), kWallColor);
                 continue;
             }
             const auto owner = controller(match_, cell);
-            renderer.fill_rect(cell_rect(cell, 1.0f),
+            renderer.fill_rect(board_rect(cell, 1.0f),
                                owner ? kTerritoryColors[*owner] : kFloorColor);
         }
     }
     for (std::size_t i = 0; i < match_.blocks.size(); ++i) {
         const int owner = match_.block_owners[i];
-        renderer.fill_rect(cell_rect(match_.blocks[i], 4.0f),
+        renderer.fill_rect(board_rect(match_.blocks[i], 4.0f),
                            owner == kNoOwner ? kNeutralBlockColor : kOwnedBlockColors[owner]);
     }
 
     // The player whose turn it is is drawn bigger.
     for (int p = 0; p < kPlayerCount; ++p) {
         const bool active = !is_over(match_) && p == match_.current;
-        renderer.fill_rect(cell_rect(match_.players[p], active ? 5.0f : 12.0f), kPlayerColors[p]);
+        renderer.fill_rect(board_rect(match_.players[p], active ? 5.0f : 12.0f), kPlayerColors[p]);
     }
 
-    // Bottom strip: one pip per move, coloured by whose move it will be and
-    // dark once used. When the match is over it shows the winner's colour.
-    const float strip_y = static_cast<float>(grid.height() * kCellSize);
     const float strip_w = static_cast<float>(grid.width() * kCellSize);
+
+    // Top strip: one pip per move, coloured by whose move it will be and dark
+    // once used. When the match is over it shows the winner's colour.
+    const float pips_y = 5.0f;
+    const float pips_h = kStripHeight - 10.0f;
     if (is_over(match_)) {
         const auto winner = leader(match_);
-        renderer.fill_rect({0.0f, strip_y + 8.0f, strip_w, kCellSize - 16.0f},
+        renderer.fill_rect({8.0f, pips_y, strip_w - 16.0f, pips_h},
                            winner ? kPlayerColors[*winner] : kDrawColor);
-        return;
+    } else {
+        const int total = start_.moves_left;
+        const int used = total - match_.moves_left;
+        const float pip_w = strip_w / static_cast<float>(total);
+        for (int i = 0; i < total; ++i) {
+            const engine::Color color =
+                i < used ? kUsedMoveColor : kPlayerColors[i % kPlayerCount];
+            renderer.fill_rect({static_cast<float>(i) * pip_w + 2.0f, pips_y, pip_w - 4.0f, pips_h},
+                               color);
+        }
     }
-    const int total = start_.moves_left;
-    const int used = total - match_.moves_left;
-    const float pip_w = strip_w / static_cast<float>(total);
-    for (int i = 0; i < total; ++i) {
-        const engine::Color color = i < used ? kUsedMoveColor : kPlayerColors[i % kPlayerCount];
-        renderer.fill_rect({static_cast<float>(i) * pip_w + 2.0f, strip_y + 14.0f, pip_w - 4.0f,
-                            kCellSize - 28.0f},
-                           color);
+
+    // Bottom strip: the score as a tug of war. Player 1 fills from the left
+    // and player 2 from the right, in proportion to their scores; the white
+    // tick marks the middle. Grey while nobody controls anything.
+    const float bottom_y = kStripHeight + static_cast<float>(grid.height() * kCellSize);
+    const engine::Rect score_bar{8.0f, bottom_y + 5.0f, strip_w - 16.0f, kStripHeight - 10.0f};
+    const int first = score(match_, 0);
+    const int second = score(match_, 1);
+    if (first + second == 0) {
+        renderer.fill_rect(score_bar, kUsedMoveColor);
+    } else {
+        const float first_w = score_bar.w * static_cast<float>(first) /
+                              static_cast<float>(first + second);
+        renderer.fill_rect({score_bar.x, score_bar.y, first_w, score_bar.h}, kPlayerColors[0]);
+        renderer.fill_rect({score_bar.x + first_w, score_bar.y, score_bar.w - first_w, score_bar.h},
+                           kPlayerColors[1]);
     }
+    renderer.fill_rect({score_bar.x + score_bar.w / 2.0f - 1.0f, score_bar.y - 3.0f, 2.0f,
+                        score_bar.h + 6.0f},
+                       kMiddleTickColor);
 }
 
 } // namespace game

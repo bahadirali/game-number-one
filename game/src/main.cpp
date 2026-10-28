@@ -73,7 +73,7 @@ int run_duel() {
         std::fprintf(stderr, "The built-in duel board is invalid.\n");
         return 1;
     }
-    const auto config = make_config(match->grid, 1);  // one extra row for the move strip
+    const auto config = make_config(match->grid, 1);  // one extra row for the move and score strips
     game::DuelGame duel(std::move(*match));
     return engine::run(config, duel);
 }

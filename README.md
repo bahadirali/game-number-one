@@ -12,7 +12,9 @@ near both players' blocks goes to whoever has more blocks next to it (nobody on 
 tie). After 50 moves (25 each), whoever controls more floor cells wins.
 
 Owned blocks and the floor they control are tinted in their owner's colour; the
-strip at the bottom shows the moves left, then the winner's colour (grey for a draw).
+pips above the board show the moves left, then the winner's colour (grey for a
+draw), and the bar below it shows the current score as a tug of war (yellow from
+the left, pink from the right).
 The final scores are also printed to the console in debug builds.
 
 The one-player puzzle room from milestone 2 is still there: run `game.exe --puzzle`.
@@ -24,6 +26,7 @@ The one-player puzzle room from milestone 2 is still there: run `game.exe --puzz
 | WASD       | Player 1 (yellow) moves |
 | Arrow keys | Player 2 (pink) moves |
 | Space      | Pass the turn |
+| Tab        | Switch player 2 between AI (default) and human |
 | R          | Restart the round |
 | Esc        | Quit   |
 

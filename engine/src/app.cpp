@@ -23,6 +23,7 @@ std::optional<Key> to_key(SDL_Scancode scancode) {
         case SDL_SCANCODE_D: return Key::D;
         case SDL_SCANCODE_SPACE: return Key::Space;
         case SDL_SCANCODE_R: return Key::R;
+        case SDL_SCANCODE_TAB: return Key::Tab;
         case SDL_SCANCODE_ESCAPE: return Key::Escape;
         default: return std::nullopt;
     }

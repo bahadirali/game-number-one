@@ -1,6 +1,7 @@
 # game_logic: the rules of the game, with no window, input or drawing.
 # Kept separate so the tests can link it without SDL or the engine.
 add_library(game_logic STATIC
+    src/ai.cpp
     src/level.cpp
     src/match.cpp
     src/movement.cpp
