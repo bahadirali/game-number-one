@@ -20,6 +20,25 @@ game::Level make_level(const std::array<std::string_view, N>& rows) {
 
 } // namespace
 
+TEST_CASE("move_player walks across empty floor without touching blocks") {
+    auto level = make_level(std::array<std::string_view, 4>{
+        "#####",
+        "#@..#",
+        "#..$#",
+        "#####",
+    });
+    CHECK(game::move_player(level, Direction::Right));
+    CHECK(level.player == Cell{2, 1});
+    CHECK(game::move_player(level, Direction::Down));
+    CHECK(level.player == Cell{2, 2});
+    CHECK(game::move_player(level, Direction::Left));
+    CHECK(level.player == Cell{1, 2});
+    CHECK(game::move_player(level, Direction::Up));
+    CHECK(level.player == Cell{1, 1});
+    REQUIRE(level.blocks.size() == 1);
+    CHECK(level.blocks[0] == Cell{3, 2});
+}
+
 TEST_CASE("walking into a block pushes it onto free floor") {
     auto level = make_level(std::array<std::string_view, 3>{
         "#####",
