@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string_view>
+#include <vector>
 
 #include "match.h"
 
@@ -139,6 +140,41 @@ TEST_CASE("pushing your opponent's block steals it") {
     CHECK(game::play_move(match, Direction::Up));     // P2 pushes it on to (3,1)
     CHECK(match.blocks[0] == Cell{3, 1});
     CHECK(match.block_owners[0] == 1);
+}
+
+TEST_CASE("a pushed block flips the opponent blocks it touches side by side") {
+    // P1 pushes the block at (2,2) to (3,2). There it touches (4,2) on the
+    // right and (3,1) above, but (4,3) only diagonally.
+    auto match = make_match(std::array<std::string_view, 5>{
+        "#######",
+        "#..$..#",
+        "#1$.$.#",
+        "#...$2#",
+        "#######",
+    });
+    // Blocks in reading order: (3,1), (2,2), (4,2), (4,3).
+    match.block_owners = {1, game::kNoOwner, 1, 1};
+
+    CHECK(game::play_move(match, Direction::Right));
+    CHECK(match.blocks[1] == Cell{3, 2});
+    CHECK(match.block_owners[0] == 0);  // above: flipped
+    CHECK(match.block_owners[1] == 0);  // the pushed block
+    CHECK(match.block_owners[2] == 0);  // right: flipped
+    CHECK(match.block_owners[3] == 1);  // diagonal: untouched, and no chain from (4,2)
+}
+
+TEST_CASE("touching neutral or your own blocks doesn't change them") {
+    // P1 pushes (2,2) to (3,2), touching (3,1) above and (4,2) on the right.
+    auto match = make_match(std::array<std::string_view, 4>{
+        "#######",
+        "#..$..#",
+        "#1$.$2#",
+        "#######",
+    });
+    // Blocks in reading order: (3,1), (2,2), (4,2).
+    match.block_owners = {game::kNoOwner, game::kNoOwner, 0};
+    CHECK(game::play_move(match, Direction::Right));
+    CHECK(match.block_owners == std::vector<int>{game::kNoOwner, 0, 0});
 }
 
 TEST_CASE("a failed push doesn't change the owner") {

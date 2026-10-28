@@ -16,7 +16,8 @@ constexpr int kNoOwner = -1;
 
 // A two-player, turn-based round on one shared board. Players take turns
 // making one move each: a step (which may push a block) or a pass. Pushing a
-// block makes it yours, even if your opponent owned it. An owned block
+// block makes it yours, even if your opponent owned it, and also takes over
+// any of your opponent's blocks it ends up touching side by side. An owned block
 // controls the floor cells among its 8 neighbours. When the moves run out,
 // whoever controls more floor cells wins.
 struct Match {

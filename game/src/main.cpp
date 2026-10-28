@@ -27,19 +27,25 @@ constexpr std::array<std::string_view, 9> kPuzzleRows = {
     "############",
 };
 
-// Point-symmetric, so neither player starts with an edge.
-constexpr std::array<std::string_view, 9> kDuelRows = {
-    "############",
-    "#1.........#",
-    "#..$....$..#",
-    "#...#..#...#",
-    "#.$......$.#",
-    "#...#..#...#",
-    "#..$....$..#",
-    "#.........2#",
-    "############",
+// Point-symmetric, so neither player starts with an edge. The players start
+// on opposite sides with a dense field of blocks between them, so there's
+// something to fight over from the first moves.
+constexpr std::array<std::string_view, 13> kDuelRows = {
+    "#################",
+    "#...............#",
+    "#...............#",
+    "#....$.$.$.$....#",
+    "#...$.$...$.$...#",
+    "#.....$.#.$.....#",
+    "#1...$.$.$.$...2#",
+    "#.....$.#.$.....#",
+    "#...$.$...$.$...#",
+    "#....$.$.$.$....#",
+    "#...............#",
+    "#...............#",
+    "#################",
 };
-constexpr int kDuelMoves = 30;  // 15 each
+constexpr int kDuelMoves = 50;  // 25 each
 
 engine::AppConfig make_config(const game::Grid& grid, int extra_rows) {
     engine::AppConfig config;

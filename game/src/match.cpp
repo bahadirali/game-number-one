@@ -15,6 +15,24 @@ void end_turn(Match& match) {
     match.current = (match.current + 1) % kPlayerCount;
 }
 
+// The pusher owns the pushed block, and flips any opponent blocks it now
+// touches side by side. Neutral blocks it touches stay neutral, and flipped
+// blocks don't flip further blocks.
+void claim_pushed_block(Match& match, std::size_t index) {
+    match.block_owners[index] = match.current;
+    const Cell pushed = match.blocks[index];
+    for (Direction direction : {Direction::Up, Direction::Down, Direction::Left, Direction::Right}) {
+        const auto touched = std::ranges::find(match.blocks, step(pushed, direction));
+        if (touched == match.blocks.end()) {
+            continue;
+        }
+        int& owner = match.block_owners[static_cast<std::size_t>(touched - match.blocks.begin())];
+        if (owner != kNoOwner) {
+            owner = match.current;
+        }
+    }
+}
+
 } // namespace
 
 std::optional<Match> parse_match(std::span<const std::string_view> rows, int total_moves) {
@@ -78,7 +96,7 @@ bool play_move(Match& match, Direction direction) {
         return false;
     }
     if (pushed != match.blocks.end()) {
-        match.block_owners[static_cast<std::size_t>(pushed_index)] = match.current;
+        claim_pushed_block(match, static_cast<std::size_t>(pushed_index));
     }
     end_turn(match);
     return true;
