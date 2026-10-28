@@ -16,6 +16,7 @@ enum class Action {
 
 constexpr engine::Color kFloorColor{52, 56, 68};
 constexpr engine::Color kWallColor{118, 98, 82};
+constexpr engine::Color kBlockColor{86, 152, 172};
 constexpr engine::Color kPlayerColor{236, 196, 84};
 
 engine::Rect cell_rect(Cell cell, float inset = 0.0f) {
@@ -61,7 +62,7 @@ void PuzzleGame::update(const engine::Input& input) {
     };
     for (const auto& move : kMoves) {
         if (input.pressed(move.action)) {
-            level_.player = try_move(level_.grid, level_.player, move.direction);
+            move_player(level_, move.direction);
             break;
         }
     }
@@ -75,6 +76,9 @@ void PuzzleGame::render(engine::Renderer& renderer) {
             const bool wall = grid.at(cell) == Tile::Wall;
             renderer.fill_rect(cell_rect(cell, wall ? 0.0f : 1.0f), wall ? kWallColor : kFloorColor);
         }
+    }
+    for (Cell block : level_.blocks) {
+        renderer.fill_rect(cell_rect(block, 4.0f), kBlockColor);
     }
     renderer.fill_rect(cell_rect(level_.player, 8.0f), kPlayerColor);
 }

@@ -3,7 +3,8 @@
 A small grid puzzle game (Sokoban family), written in C++20 with SDL3, plus a small
 engine that grows with it.
 
-Right now (milestone 1) it's a walled room and a yellow square you move cell by cell.
+Right now (milestone 2) it's a walled room where the yellow player pushes blue blocks
+around. A block moves only into an empty floor cell; you can't push two blocks at once.
 
 ## Controls
 

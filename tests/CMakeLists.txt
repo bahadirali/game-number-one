@@ -1,6 +1,7 @@
 add_executable(tests
     main.cpp
     movement_tests.cpp
+    push_tests.cpp
     level_tests.cpp
     input_tests.cpp
     app_tests.cpp

@@ -4,6 +4,10 @@
 
 namespace game {
 
+bool has_block(const Level& level, Cell cell) {
+    return std::ranges::find(level.blocks, cell) != level.blocks.end();
+}
+
 std::optional<Level> parse_level(std::span<const std::string_view> rows) {
     if (rows.empty()) {
         return std::nullopt;
@@ -30,6 +34,10 @@ std::optional<Level> parse_level(std::span<const std::string_view> rows) {
                 case '.':
                 case ' ':
                     level.grid.set(cell, Tile::Floor);
+                    break;
+                case '$':
+                    level.grid.set(cell, Tile::Floor);
+                    level.blocks.push_back(cell);
                     break;
                 case '@':
                     level.grid.set(cell, Tile::Floor);
