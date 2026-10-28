@@ -52,8 +52,10 @@ std::optional<Match> parse_match(std::span<const std::string_view> rows, int tot
         return std::nullopt;
     }
 
-    return Match{std::move(level->grid), std::move(level->blocks), {level->player, *second}, 0,
-                 total_moves};
+    // Blocks start out neutral; pushing one claims it.
+    std::vector<int> owners(level->blocks.size(), kNoOwner);
+    return Match{std::move(level->grid), std::move(level->blocks), std::move(owners),
+                 {level->player, *second}, 0, total_moves};
 }
 
 bool is_over(const Match& match) {
@@ -66,9 +68,17 @@ bool play_move(Match& match, Direction direction) {
     }
     const int other = (match.current + 1) % kPlayerCount;
     const std::array<Cell, 1> occupied = {match.players[other]};
-    if (!move_and_push(match.grid, match.blocks, match.players[match.current], direction,
-                       occupied)) {
+
+    // Note which block (if any) is in the way: if the move succeeds, it was pushed.
+    Cell& mover = match.players[match.current];
+    const auto pushed = std::ranges::find(match.blocks, step(mover, direction));
+    const auto pushed_index = pushed - match.blocks.begin();
+
+    if (!move_and_push(match.grid, match.blocks, mover, direction, occupied)) {
         return false;
+    }
+    if (pushed != match.blocks.end()) {
+        match.block_owners[static_cast<std::size_t>(pushed_index)] = match.current;
     }
     end_turn(match);
     return true;
@@ -80,43 +90,43 @@ void pass_turn(Match& match) {
     }
 }
 
-std::vector<Cell> reachable_cells(const Match& match, int player) {
-    const auto walkable = [&](Cell cell) {
-        return match.grid.at(cell) == Tile::Floor &&
-               std::ranges::find(match.blocks, cell) == match.blocks.end() &&
-               std::ranges::find(match.players, cell) == match.players.end();
-    };
+std::optional<int> controller(const Match& match, Cell cell) {
+    if (match.grid.at(cell) != Tile::Floor) {
+        return std::nullopt;
+    }
 
-    // Flood fill outwards from the player. `found` doubles as the queue:
-    // everything before `next` has had its neighbours checked.
-    const Grid& grid = match.grid;
-    std::vector<bool> seen(static_cast<std::size_t>(grid.width() * grid.height()), false);
-    const auto mark = [&](Cell cell) {
-        seen[static_cast<std::size_t>(cell.y * grid.width() + cell.x)] = true;
-    };
-    const auto is_seen = [&](Cell cell) {
-        return seen[static_cast<std::size_t>(cell.y * grid.width() + cell.x)];
-    };
+    std::array<int, kPlayerCount> nearby{};
+    for (std::size_t i = 0; i < match.blocks.size(); ++i) {
+        const Cell block = match.blocks[i];
+        const int dx = block.x - cell.x;
+        const int dy = block.y - cell.y;
+        const bool neighbour = (dx != 0 || dy != 0) && dx >= -1 && dx <= 1 && dy >= -1 && dy <= 1;
+        if (neighbour && match.block_owners[i] != kNoOwner) {
+            ++nearby[static_cast<std::size_t>(match.block_owners[i])];
+        }
+    }
 
-    const Cell start = match.players[static_cast<std::size_t>(player)];
-    std::vector<Cell> found = {start};
-    mark(start);
-    for (std::size_t next = 0; next < found.size(); ++next) {
-        for (Direction direction :
-             {Direction::Up, Direction::Down, Direction::Left, Direction::Right}) {
-            const Cell neighbour = step(found[next], direction);
-            if (walkable(neighbour) && !is_seen(neighbour)) {
-                mark(neighbour);
-                found.push_back(neighbour);
+    if (nearby[0] == nearby[1]) {
+        return std::nullopt;
+    }
+    return nearby[0] > nearby[1] ? 0 : 1;
+}
+
+int score(const Match& match, int player) {
+    int total = 0;
+    for (int y = 0; y < match.grid.height(); ++y) {
+        for (int x = 0; x < match.grid.width(); ++x) {
+            if (controller(match, {x, y}) == player) {
+                ++total;
             }
         }
     }
-    return found;
+    return total;
 }
 
 std::optional<int> leader(const Match& match) {
-    const auto first = reachable_cells(match, 0).size();
-    const auto second = reachable_cells(match, 1).size();
+    const int first = score(match, 0);
+    const int second = score(match, 1);
     if (first == second) {
         return std::nullopt;
     }

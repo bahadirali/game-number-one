@@ -1,7 +1,6 @@
 #include "duel_game.h"
 
 #include <cstdio>
-#include <vector>
 
 #include "layout.h"
 
@@ -25,12 +24,14 @@ enum class Action {
 
 constexpr engine::Color kFloorColor{52, 56, 68};
 constexpr engine::Color kWallColor{118, 98, 82};
-constexpr engine::Color kBlockColor{86, 152, 172};
+constexpr engine::Color kNeutralBlockColor{86, 152, 172};
 constexpr engine::Color kUsedMoveColor{36, 38, 46};
 constexpr engine::Color kDrawColor{150, 150, 150};
 
-// Per player: the piece itself, and a dim tint for floor only they can reach.
+// Per player: the piece itself, the blocks they own, and a dim tint for the
+// floor they control.
 constexpr engine::Color kPlayerColors[kPlayerCount] = {{236, 196, 84}, {214, 96, 150}};
+constexpr engine::Color kOwnedBlockColors[kPlayerCount] = {{172, 136, 52}, {158, 64, 110}};
 constexpr engine::Color kTerritoryColors[kPlayerCount] = {{92, 82, 56}, {88, 58, 80}};
 
 struct Binding {
@@ -109,9 +110,8 @@ void DuelGame::update(const engine::Input& input) {
 }
 
 void DuelGame::announce_result() const {
-    const auto first = reachable_cells(match_, 0).size();
-    const auto second = reachable_cells(match_, 1).size();
-    std::printf("Player 1 reaches %zu cells, player 2 reaches %zu.\n", first, second);
+    std::printf("Player 1 controls %d cells, player 2 controls %d.\n", score(match_, 0),
+                score(match_, 1));
     if (const auto winner = leader(match_)) {
         std::printf("Player %d wins!\n", *winner + 1);
     } else {
@@ -122,15 +122,6 @@ void DuelGame::announce_result() const {
 void DuelGame::render(engine::Renderer& renderer) {
     const Grid& grid = match_.grid;
 
-    // Bit p is set for cells player p can reach. Cells both reach stay plain,
-    // since they don't change the score.
-    std::vector<int> reach(static_cast<std::size_t>(grid.width() * grid.height()), 0);
-    for (int p = 0; p < kPlayerCount; ++p) {
-        for (Cell cell : reachable_cells(match_, p)) {
-            reach[static_cast<std::size_t>(cell.y * grid.width() + cell.x)] |= 1 << p;
-        }
-    }
-
     for (int y = 0; y < grid.height(); ++y) {
         for (int x = 0; x < grid.width(); ++x) {
             const Cell cell{x, y};
@@ -138,16 +129,15 @@ void DuelGame::render(engine::Renderer& renderer) {
                 renderer.fill_rect(cell_rect(cell), kWallColor);
                 continue;
             }
-            engine::Color color = kFloorColor;
-            const int bits = reach[static_cast<std::size_t>(y * grid.width() + x)];
-            if (bits == 1 || bits == 2) {
-                color = kTerritoryColors[bits - 1];
-            }
-            renderer.fill_rect(cell_rect(cell, 1.0f), color);
+            const auto owner = controller(match_, cell);
+            renderer.fill_rect(cell_rect(cell, 1.0f),
+                               owner ? kTerritoryColors[*owner] : kFloorColor);
         }
     }
-    for (Cell block : match_.blocks) {
-        renderer.fill_rect(cell_rect(block, 4.0f), kBlockColor);
+    for (std::size_t i = 0; i < match_.blocks.size(); ++i) {
+        const int owner = match_.block_owners[i];
+        renderer.fill_rect(cell_rect(match_.blocks[i], 4.0f),
+                           owner == kNoOwner ? kNeutralBlockColor : kOwnedBlockColors[owner]);
     }
 
     // The player whose turn it is is drawn bigger.

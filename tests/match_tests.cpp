@@ -113,38 +113,82 @@ TEST_CASE("the match ends when the moves run out, and then nobody moves") {
     CHECK(match.players[0] == Cell{1, 0});
 }
 
-TEST_CASE("reachable_cells floods open floor around blocks, walls and the other player") {
-    const auto match = make_match(std::array<std::string_view, 4>{
+TEST_CASE("blocks start neutral, and pushing one makes it yours") {
+    auto match = make_match(std::array<std::string_view, 3>{
         "#######",
-        "#1.$..#",
-        "#..#2.#",
+        "#1$..2#",
         "#######",
     });
-    // Player 1's side: (1,1) (2,1) (1,2) (2,2). The block and wall seal it off.
-    CHECK(game::reachable_cells(match, 0).size() == 4);
-    // Player 2's side: its own cell plus (4,1) (5,1) (5,2).
-    CHECK(game::reachable_cells(match, 1).size() == 4);
-    CHECK_FALSE(game::leader(match).has_value());
+    REQUIRE(match.block_owners.size() == 1);
+    CHECK(match.block_owners[0] == game::kNoOwner);
+
+    CHECK(game::play_move(match, Direction::Right));
+    CHECK(match.block_owners[0] == 0);
 }
 
-TEST_CASE("leader is whoever reaches more cells") {
-    const auto match = make_match(std::array<std::string_view, 3>{
-        "#######",
-        "#1..$2#",
-        "#######",
+TEST_CASE("pushing your opponent's block steals it") {
+    auto match = make_match(std::array<std::string_view, 5>{
+        "######",
+        "#....#",
+        "#1$..#",
+        "#..2.#",
+        "######",
     });
-    CHECK(game::reachable_cells(match, 0).size() == 3);
-    CHECK(game::reachable_cells(match, 1).size() == 1);
+    CHECK(game::play_move(match, Direction::Right));  // P1 pushes the block to (3,2)
+    CHECK(match.block_owners[0] == 0);
+    CHECK(game::play_move(match, Direction::Up));     // P2 pushes it on to (3,1)
+    CHECK(match.blocks[0] == Cell{3, 1});
+    CHECK(match.block_owners[0] == 1);
+}
+
+TEST_CASE("a failed push doesn't change the owner") {
+    auto match = make_match(std::array<std::string_view, 3>{
+        "#####",
+        "#1$#2",
+        "#####",
+    });
+    CHECK_FALSE(game::play_move(match, Direction::Right));
+    CHECK(match.block_owners[0] == game::kNoOwner);
+}
+
+TEST_CASE("an owned block controls the floor around it, but not walls or itself") {
+    auto match = make_match(std::array<std::string_view, 5>{
+        "#####",
+        "#...#",
+        "#.$.#",
+        "#1.2#",
+        "#####",
+    });
+    CHECK_FALSE(game::controller(match, {1, 1}).has_value());  // neutral block
+    match.block_owners[0] = 0;
+
+    CHECK(game::controller(match, {1, 1}) == 0);  // diagonal
+    CHECK(game::controller(match, {2, 1}) == 0);  // straight
+    CHECK(game::controller(match, {1, 3}) == 0);  // under a player still counts
+    CHECK_FALSE(game::controller(match, {2, 2}).has_value());  // its own cell
+    CHECK_FALSE(game::controller(match, {0, 0}).has_value());  // wall
+    CHECK(game::score(match, 0) == 8);
+    CHECK(game::score(match, 1) == 0);
     CHECK(game::leader(match) == 0);
 }
 
-TEST_CASE("cells both players reach count for both") {
-    const auto match = make_match(std::array<std::string_view, 3>{
+TEST_CASE("a cell near both players' blocks goes to whoever has more of them") {
+    // Blocks at (1,1), (3,1) and (1,3) all neighbour the middle cell (2,2).
+    auto match = make_match(std::array<std::string_view, 5>{
         "######",
-        "#1..2#",
+        "#$.$1#",
+        "#....#",
+        "#$..2#",
         "######",
     });
-    CHECK(game::reachable_cells(match, 0).size() == 3);
-    CHECK(game::reachable_cells(match, 1).size() == 3);
-    CHECK_FALSE(game::leader(match).has_value());
+    const Cell middle{2, 2};
+
+    match.block_owners = {0, 1, 1};
+    CHECK(game::controller(match, middle) == 1);
+
+    match.block_owners = {0, 0, 1};
+    CHECK(game::controller(match, middle) == 0);
+
+    match.block_owners = {0, 1, game::kNoOwner};  // neutral blocks don't count
+    CHECK_FALSE(game::controller(match, middle).has_value());
 }

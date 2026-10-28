@@ -5,9 +5,12 @@ engine that grows with it.
 
 Right now it's a two-player, turn-based duel on one keyboard (a prototype to test the
 idea). Players take turns making one move each: a step, which may push a block, or a
-pass. After 30 moves (15 each) the round ends and each player scores the empty cells
-they can still walk to. Cells both players can reach count for both, so you win by
-walling off space with blocks. Floor only you can reach is tinted in your colour; the
+pass. Pushing a block makes it yours, even if your opponent owned it; blocks start out
+neutral. Each owned block controls the floor cells among its 8 neighbours, and a cell
+near both players' blocks goes to whoever has more blocks next to it (nobody on a
+tie). After 30 moves (15 each), whoever controls more floor cells wins.
+
+Owned blocks and the floor they control are tinted in their owner's colour; the
 strip at the bottom shows the moves left, then the winner's colour (grey for a draw).
 The final scores are also printed to the console in debug builds.
 
