@@ -79,6 +79,8 @@ Swap `debug` for `release` for an optimized build. Build output goes to
 ## Git workflow
 
 - Work in small steps, one milestone or fix at a time.
-- Commit directly on `main`, then push each finished, tested step to `origin main`
-  (github.com/bahadirali/game-number-one).
+- Commit directly on `main` and push to `origin main`
+  (github.com/bahadirali/game-number-one), but **only after Bahadir approves**:
+  make the change, build and test it, explain it, then wait for an explicit OK
+  before committing or pushing.
 - No branches or pull requests unless Bahadir asks for them.
