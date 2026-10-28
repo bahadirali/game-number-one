@@ -4,11 +4,10 @@
 
 #include <engine/app.h>
 
+#include "layout.h"
 #include "level.h"
 
 namespace game {
-
-constexpr int kCellSize = 48;  // pixels per grid cell
 
 class PuzzleGame : public engine::Game {
 public:

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <span>
+#include <vector>
+
 #include "grid.h"
 #include "level.h"
 
@@ -18,6 +21,14 @@ Cell step(Cell from, Direction direction);
 // Where the player ends up after trying to move one cell: the next cell if
 // it's floor, otherwise `from` unchanged.
 Cell try_move(const Grid& grid, Cell from, Direction direction);
+
+// The push rule shared by every mover. `mover` steps one cell; walking into a
+// block pushes it one cell further, but only if that cell is floor with no
+// block on it: blocks never push other blocks. `occupied` lists cells held by
+// other movers, which can be neither walked into nor pushed onto.
+// Returns whether the mover moved.
+bool move_and_push(const Grid& grid, std::vector<Cell>& blocks, Cell& mover,
+                   Direction direction, std::span<const Cell> occupied = {});
 
 // Moves the player one cell. Walking into a block pushes it one cell further,
 // but only if that cell is floor with no other block on it: blocks never push

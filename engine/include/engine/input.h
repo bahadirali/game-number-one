@@ -17,6 +17,8 @@ enum class Key {
     A,
     S,
     D,
+    Space,
+    R,
     Escape,
     Count
 };

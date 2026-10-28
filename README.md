@@ -3,15 +3,27 @@
 A small grid puzzle game (Sokoban family), written in C++20 with SDL3, plus a small
 engine that grows with it.
 
-Right now (milestone 2) it's a walled room where the yellow player pushes blue blocks
-around. A block moves only into an empty floor cell; you can't push two blocks at once.
+Right now it's a two-player, turn-based duel on one keyboard (a prototype to test the
+idea). Players take turns making one move each: a step, which may push a block, or a
+pass. After 30 moves (15 each) the round ends and each player scores the empty cells
+they can still walk to. Cells both players can reach count for both, so you win by
+walling off space with blocks. Floor only you can reach is tinted in your colour; the
+strip at the bottom shows the moves left, then the winner's colour (grey for a draw).
+The final scores are also printed to the console in debug builds.
+
+The one-player puzzle room from milestone 2 is still there: run `game.exe --puzzle`.
 
 ## Controls
 
-| Key                 | Action |
-|---------------------|--------|
-| Arrow keys / WASD   | Move (hold to keep moving) |
-| Esc                 | Quit   |
+| Key        | Action |
+|------------|--------|
+| WASD       | Player 1 (yellow) moves |
+| Arrow keys | Player 2 (pink) moves |
+| Space      | Pass the turn |
+| R          | Restart the round |
+| Esc        | Quit   |
+
+In `--puzzle` mode, arrow keys or WASD move the single player.
 
 ## Build and run in Visual Studio
 
@@ -41,7 +53,7 @@ out\build\debug\bin\game.exe
 ## Project layout
 
 - `engine/`: reusable engine library (window, game loop, input, drawing). Knows nothing about the game.
-- `game/`: the puzzle game, built on the engine.
+- `game/`: the game, built on the engine.
 - `tests/`: unit tests (doctest + CTest).
 
 See [CLAUDE.md](CLAUDE.md) for the design rules and conventions.

@@ -19,15 +19,6 @@ constexpr engine::Color kWallColor{118, 98, 82};
 constexpr engine::Color kBlockColor{86, 152, 172};
 constexpr engine::Color kPlayerColor{236, 196, 84};
 
-engine::Rect cell_rect(Cell cell, float inset = 0.0f) {
-    return {
-        static_cast<float>(cell.x * kCellSize) + inset,
-        static_cast<float>(cell.y * kCellSize) + inset,
-        static_cast<float>(kCellSize) - 2.0f * inset,
-        static_cast<float>(kCellSize) - 2.0f * inset,
-    };
-}
-
 } // namespace
 
 void PuzzleGame::setup(engine::Input& input) {

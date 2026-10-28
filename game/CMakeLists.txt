@@ -2,6 +2,7 @@
 # Kept separate so the tests can link it without SDL or the engine.
 add_library(game_logic STATIC
     src/level.cpp
+    src/match.cpp
     src/movement.cpp
 )
 target_include_directories(game_logic PUBLIC src)
@@ -10,6 +11,7 @@ target_link_libraries(game_logic PRIVATE project_options)
 # game: the executable that plugs the game logic into the engine.
 add_executable(game
     src/main.cpp
+    src/duel_game.cpp
     src/puzzle_game.cpp
 )
 target_link_libraries(game PRIVATE game_logic engine::engine project_options)
