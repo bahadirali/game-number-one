@@ -96,25 +96,20 @@ void DuelGame::update(const engine::Input& input) {
         quit_ = true;
         return;
     }
-    if (input.pressed(Action::Restart)) {
+    if (input.just_pressed(Action::Restart)) {
         // Each new round the other player goes first.
         first_player_ = (first_player_ + 1) % kPlayerCount;
         match_ = with_first_player(start_, first_player_);
         ai_wait_ticks_ = 0;
         return;
     }
-    if (input.pressed(Action::ToggleAi)) {
+    if (input.just_pressed(Action::ToggleAi)) {
         ai_enabled_ = !ai_enabled_;
         std::printf("AI %s.\n", ai_enabled_ ? "on" : "off");
     }
     if (is_over(match_)) {
         return;
     }
-
-    // Pass only on a fresh press: key repeat would otherwise pass for both
-    // players in turn while Space is held.
-    const bool fresh_pass = input.pressed(Action::Pass) && !pass_was_held_;
-    pass_was_held_ = input.held(Action::Pass);
 
     bool turn_taken = false;
     if (ai_enabled_ && match_.current == kAiPlayer) {
@@ -129,7 +124,8 @@ void DuelGame::update(const engine::Input& input) {
             pass_turn(match_);
             turn_taken = true;
         }
-    } else if (fresh_pass) {
+    } else if (input.just_pressed(Action::Pass)) {
+        // Not on key repeat: holding Space would pass for both players in turn.
         pass_turn(match_);
         turn_taken = true;
     } else {

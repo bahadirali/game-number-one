@@ -69,3 +69,28 @@ TEST_CASE("unbound actions are never pressed") {
     CHECK_FALSE(input.pressed(Action::Move));
     CHECK_FALSE(input.held(Action::Move));
 }
+
+TEST_CASE("just_pressed fires once per press and ignores key repeat") {
+    Input input = make_input();
+    input.on_key_down(Key::Right);
+    input.tick();
+    CHECK(input.just_pressed(Action::Move));
+    for (int i = 0; i < 10; ++i) {  // well past the repeat delay
+        input.tick();
+        CHECK_FALSE(input.just_pressed(Action::Move));
+    }
+
+    input.on_key_up(Key::Right);
+    input.tick();
+    input.on_key_down(Key::Right);
+    input.tick();
+    CHECK(input.just_pressed(Action::Move));
+}
+
+TEST_CASE("just_pressed sees a tap between two ticks") {
+    Input input = make_input();
+    input.on_key_down(Key::D);
+    input.on_key_up(Key::D);
+    input.tick();
+    CHECK(input.just_pressed(Action::Move));
+}

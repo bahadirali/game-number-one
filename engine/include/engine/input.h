@@ -45,6 +45,9 @@ public:
 
     // True on the tick the action starts, and again on each key repeat.
     bool pressed(ActionId action) const;
+    // True only on the tick the action starts, never on key repeats. For
+    // one-shot actions (restart, toggles) that must not fire again while held.
+    bool just_pressed(ActionId action) const;
     // True on every tick while any key bound to the action is down.
     bool held(ActionId action) const;
 
@@ -55,6 +58,10 @@ public:
     template <typename E>
         requires std::is_enum_v<E>
     bool pressed(E action) const { return pressed(static_cast<ActionId>(action)); }
+
+    template <typename E>
+        requires std::is_enum_v<E>
+    bool just_pressed(E action) const { return just_pressed(static_cast<ActionId>(action)); }
 
     template <typename E>
         requires std::is_enum_v<E>

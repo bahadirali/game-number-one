@@ -28,7 +28,6 @@ private:
     Match match_;
     bool ai_enabled_ = true;  // the AI plays player 2; Tab toggles it
     int ai_wait_ticks_ = 0;
-    bool pass_was_held_ = false;
     bool quit_ = false;
 };
 

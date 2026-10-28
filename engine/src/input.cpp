@@ -30,6 +30,10 @@ bool Input::pressed(ActionId action) const {
     return action < actions_.size() && actions_[action].pressed;
 }
 
+bool Input::just_pressed(ActionId action) const {
+    return action < actions_.size() && actions_[action].held_ticks == 0;
+}
+
 bool Input::held(ActionId action) const {
     return action < actions_.size() && actions_[action].held_ticks >= 0;
 }
