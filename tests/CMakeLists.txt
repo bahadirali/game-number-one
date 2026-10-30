@@ -4,6 +4,7 @@ add_executable(tests
     push_tests.cpp
     match_tests.cpp
     ai_tests.cpp
+    boards_tests.cpp
     level_tests.cpp
     input_tests.cpp
     app_tests.cpp

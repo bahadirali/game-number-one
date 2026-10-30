@@ -19,6 +19,8 @@ the left, pink from the right).
 The final scores are also printed to the console in debug builds.
 
 The one-player puzzle room from milestone 2 is still there: run `game.exe --puzzle`.
+`game.exe --stuck-test` opens a tiny corridor board for trying out the automatic pass:
+player 1 can only step left, then player 2 can only step left too, shutting player 1 in.
 
 ## Controls
 

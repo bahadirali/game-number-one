@@ -1,11 +1,12 @@
-#include <array>
 #include <cstdio>
 #include <cstring>
+#include <span>
 #include <string_view>
 #include <utility>
 
 #include <engine/app.h>
 
+#include "boards.h"
 #include "duel_game.h"
 #include "layout.h"
 #include "level.h"
@@ -13,39 +14,6 @@
 #include "puzzle_game.h"
 
 namespace {
-
-// Hard-coded boards until levels are loaded from files.
-constexpr std::array<std::string_view, 9> kPuzzleRows = {
-    "############",
-    "#..........#",
-    "#..###..$..#",
-    "#....#..#..#",
-    "#.@$.#..#..#",
-    "#....$..##.#",
-    "#..##...$..#",
-    "#..........#",
-    "############",
-};
-
-// Point-symmetric, so neither player starts with an edge. The players start
-// on opposite sides with a dense field of blocks between them, so there's
-// something to fight over from the first moves.
-constexpr std::array<std::string_view, 13> kDuelRows = {
-    "#################",
-    "#...............#",
-    "#...............#",
-    "#....$.$.$.$....#",
-    "#...$.$...$.$...#",
-    "#.....$.#.$.....#",
-    "#1...$.$.$.$...2#",
-    "#.....$.#.$.....#",
-    "#...$.$...$.$...#",
-    "#....$.$.$.$....#",
-    "#...............#",
-    "#...............#",
-    "#################",
-};
-constexpr int kDuelMoves = 50;  // 25 each
 
 engine::AppConfig make_config(const game::Grid& grid, int extra_rows) {
     engine::AppConfig config;
@@ -57,7 +25,7 @@ engine::AppConfig make_config(const game::Grid& grid, int extra_rows) {
 }
 
 int run_puzzle() {
-    auto level = game::parse_level(kPuzzleRows);
+    auto level = game::parse_level(game::boards::kPuzzleRows);
     if (!level) {
         std::fprintf(stderr, "The built-in puzzle level is invalid.\n");
         return 1;
@@ -67,8 +35,8 @@ int run_puzzle() {
     return engine::run(config, puzzle);
 }
 
-int run_duel() {
-    auto match = game::parse_match(kDuelRows, kDuelMoves);
+int run_duel(std::span<const std::string_view> rows, int total_moves) {
+    auto match = game::parse_match(rows, total_moves);
     if (!match) {
         std::fprintf(stderr, "The built-in duel board is invalid.\n");
         return 1;
@@ -80,10 +48,15 @@ int run_duel() {
 
 } // namespace
 
-// Starts the two-player duel; pass --puzzle for the one-player puzzle room.
+// Starts the two-player duel. Options:
+//   --puzzle      the one-player puzzle room instead
+//   --stuck-test  a tiny duel board for trying out the automatic pass
 int main(int argc, char** argv) {
     if (argc > 1 && std::strcmp(argv[1], "--puzzle") == 0) {
         return run_puzzle();
     }
-    return run_duel();
+    if (argc > 1 && std::strcmp(argv[1], "--stuck-test") == 0) {
+        return run_duel(game::boards::kStuckTestRows, game::boards::kStuckTestMoves);
+    }
+    return run_duel(game::boards::kDuelRows, game::boards::kDuelMoves);
 }
