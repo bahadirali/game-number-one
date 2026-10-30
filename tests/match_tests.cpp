@@ -238,3 +238,31 @@ TEST_CASE("with_first_player starts a fresh round with the given player to move"
     CHECK(round.players[1] == Cell{3, 0});
     CHECK(round.current == 0);
 }
+
+TEST_CASE("a player boxed in by walls, unpushable blocks and the other player can't move") {
+    // Up and down are walls, the block on the left is against a wall, and
+    // player 2 is on the right.
+    auto match = make_match(std::array<std::string_view, 3>{
+        "######",
+        "#$12.#",
+        "######",
+    });
+    CHECK_FALSE(game::can_move(match));
+    CHECK(game::pass_if_stuck(match));
+    CHECK(match.current == 1);
+    CHECK(match.moves_left == 9);
+
+    // Player 2 can step right, so nothing is passed for them.
+    CHECK(game::can_move(match));
+    CHECK_FALSE(game::pass_if_stuck(match));
+    CHECK(match.current == 1);
+    CHECK(match.moves_left == 9);
+}
+
+TEST_CASE("pass_if_stuck does nothing once the round is over") {
+    auto match = make_match(std::array<std::string_view, 1>{"#12#"}, 1);
+    game::pass_turn(match);
+    REQUIRE(game::is_over(match));
+    CHECK_FALSE(game::pass_if_stuck(match));
+    CHECK(match.moves_left == 0);
+}

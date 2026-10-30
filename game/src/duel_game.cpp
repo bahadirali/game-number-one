@@ -28,6 +28,9 @@ constexpr engine::Color kFloorColor{52, 56, 68};
 constexpr engine::Color kWallColor{118, 98, 82};
 constexpr int kAiPlayer = 1;       // the AI plays player 2
 constexpr int kAiDelayTicks = 20;  // a third of a second, so its moves can be followed
+constexpr int kMessageTicks = 150;  // two and a half seconds
+constexpr float kMessageScale = 2.0f;
+constexpr engine::Color kMessageBackColor{24, 26, 32};
 
 // The window has one extra row of height, split into a strip above the board
 // (moves left) and a strip below it (score).
@@ -92,6 +95,9 @@ void DuelGame::setup(engine::Input& input) {
 }
 
 void DuelGame::update(const engine::Input& input) {
+    if (message_ticks_ > 0) {
+        --message_ticks_;
+    }
     if (input.pressed(Action::Quit)) {
         quit_ = true;
         return;
@@ -101,6 +107,7 @@ void DuelGame::update(const engine::Input& input) {
         first_player_ = (first_player_ + 1) % kPlayerCount;
         match_ = with_first_player(start_, first_player_);
         ai_wait_ticks_ = 0;
+        message_ticks_ = 0;
         return;
     }
     if (input.just_pressed(Action::ToggleAi)) {
@@ -108,6 +115,17 @@ void DuelGame::update(const engine::Input& input) {
         std::printf("AI %s.\n", ai_enabled_ ? "on" : "off");
     }
     if (is_over(match_)) {
+        return;
+    }
+
+    // A player with nowhere to go loses their turn automatically.
+    const int stuck = match_.current;
+    if (pass_if_stuck(match_)) {
+        show_message("Player " + std::to_string(stuck + 1) + " can't move: turn passed", stuck);
+        ai_wait_ticks_ = 0;
+        if (is_over(match_)) {
+            announce_result();
+        }
         return;
     }
 
@@ -140,6 +158,13 @@ void DuelGame::update(const engine::Input& input) {
     if (turn_taken && is_over(match_)) {
         announce_result();
     }
+}
+
+void DuelGame::show_message(std::string text, int player) {
+    std::printf("%s\n", text.c_str());
+    message_ = std::move(text);
+    message_player_ = player;
+    message_ticks_ = kMessageTicks;
 }
 
 void DuelGame::announce_result() const {
@@ -221,6 +246,20 @@ void DuelGame::render(engine::Renderer& renderer) {
     renderer.fill_rect({score_bar.x + score_bar.w / 2.0f - 1.0f, score_bar.y - 3.0f, 2.0f,
                         score_bar.h + 6.0f},
                        kMiddleTickColor);
+
+    // The notice goes last, on top of everything, centred over the board.
+    if (message_ticks_ > 0) {
+        const float text_w = engine::Renderer::text_width(message_, kMessageScale);
+        const float text_h = engine::Renderer::text_height(kMessageScale);
+        const float text_x = (strip_w - text_w) / 2.0f;
+        const float text_y = kStripHeight + static_cast<float>(grid.height() * kCellSize) / 2.0f -
+                             text_h / 2.0f;
+        constexpr float kPadding = 12.0f;
+        renderer.fill_rect({text_x - kPadding, text_y - kPadding, text_w + 2.0f * kPadding,
+                            text_h + 2.0f * kPadding},
+                           kMessageBackColor);
+        renderer.draw_text(text_x, text_y, message_, kPlayerColors[message_player_], kMessageScale);
+    }
 }
 
 } // namespace game

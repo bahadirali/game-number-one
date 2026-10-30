@@ -113,6 +113,24 @@ void pass_turn(Match& match) {
     }
 }
 
+bool can_move(const Match& match) {
+    for (Direction direction : {Direction::Up, Direction::Down, Direction::Left, Direction::Right}) {
+        Match trial = match;
+        if (play_move(trial, direction)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool pass_if_stuck(Match& match) {
+    if (is_over(match) || can_move(match)) {
+        return false;
+    }
+    pass_turn(match);
+    return true;
+}
+
 std::optional<int> controller(const Match& match, Cell cell) {
     if (match.grid.at(cell) != Tile::Floor) {
         return std::nullopt;

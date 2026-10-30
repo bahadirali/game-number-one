@@ -49,6 +49,13 @@ bool play_move(Match& match, Direction direction);
 // Ends the current player's turn without moving.
 void pass_turn(Match& match);
 
+// Whether the current player has at least one step that goes somewhere.
+bool can_move(const Match& match);
+
+// If the round isn't over and the current player can't move at all, passes
+// their turn for them and returns true. Otherwise does nothing.
+bool pass_if_stuck(Match& match);
+
 // Who controls a floor cell: the player with more owned blocks among its 8
 // neighbours, or nothing on a tie (including when no owned block is near).
 // Whatever stands on the cell doesn't matter; walls are never controlled.

@@ -5,7 +5,8 @@ engine that grows with it.
 
 Right now it's a two-player, turn-based duel on one keyboard (a prototype to test the
 idea). Players take turns making one move each: a step, which may push a block, or a
-pass. Pushing a block makes it yours, even if your opponent owned it; blocks start out
+pass (a player with no possible step passes automatically, with a notice on
+screen). Pushing a block makes it yours, even if your opponent owned it; blocks start out
 neutral. Wherever the pushed block lands, any of your opponent's blocks it touches
 side by side (not diagonally) become yours too. Each owned block controls the floor cells among its 8 neighbours, and a cell
 near both players' blocks goes to whoever has more blocks next to it (nobody on a
