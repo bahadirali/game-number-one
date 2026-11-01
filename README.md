@@ -64,6 +64,9 @@ out\build\debug\bin\game.exe
 
 - `engine/`: reusable engine library (window, game loop, input, drawing). Knows nothing about the game.
 - `game/`: the game, built on the engine.
+- `levels/`: duel levels as text files (first line `moves N`, then the board:
+  `#` wall, `.` floor, `$` block, `1` and `2` the players). Copied next to
+  `game.exe` on every build.
 - `tests/`: unit tests (doctest + CTest).
 
 See [CLAUDE.md](CLAUDE.md) for the design rules and conventions.

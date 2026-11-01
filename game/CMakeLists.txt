@@ -3,6 +3,7 @@
 add_library(game_logic STATIC
     src/ai.cpp
     src/level.cpp
+    src/level_file.cpp
     src/match.cpp
     src/movement.cpp
 )
@@ -23,6 +24,15 @@ set_target_properties(game PROPERTIES WIN32_EXECUTABLE $<NOT:$<CONFIG:Debug>>)
 if(MSVC)
     target_link_options(game PRIVATE /ENTRY:mainCRTStartup)
 endif()
+
+# Level files ship in a levels/ folder next to the executable. The copy runs
+# on every build but only touches changed files, so editing a level just
+# needs a rebuild.
+add_custom_target(copy_levels ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+        "${PROJECT_SOURCE_DIR}/levels" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/levels"
+    COMMENT "Copying levels next to the executable")
+add_dependencies(game copy_levels)
 
 game_copy_asan_runtime(game)
 

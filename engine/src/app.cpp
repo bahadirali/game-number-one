@@ -62,6 +62,11 @@ bool pump_events(Input& input) {
 
 } // namespace
 
+std::string base_path() {
+    const char* path = SDL_GetBasePath();  // owned by SDL, not freed here
+    return path != nullptr ? std::string(path) : std::string();
+}
+
 int run(const AppConfig& config, Game& game) {
     // Zero would never update; a negative rate would make the tick length
     // negative and trap the update loop forever.

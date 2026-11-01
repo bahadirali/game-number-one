@@ -30,6 +30,12 @@ public:
     virtual bool wants_quit() const { return false; }
 };
 
+// The folder the running executable is in, ending with a path separator, or
+// an empty string if it can't be found. Data files shipped next to the
+// executable (such as levels) are found relative to it, so the game works no
+// matter which folder it was started from.
+std::string base_path();
+
 // Opens the window, runs the fixed-timestep loop until the game quits or the
 // window closes, then shuts everything down. Returns a process exit code.
 int run(const AppConfig& config, Game& game);
