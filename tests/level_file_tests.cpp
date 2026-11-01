@@ -1,7 +1,9 @@
 #include <doctest/doctest.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <string>
 
 #include "ai.h"
@@ -54,6 +56,57 @@ TEST_CASE("load_match_file finds files in folders with non-ASCII names") {
     CHECK(game::load_match_file(path_utf8).has_value());
 
     fs::remove_all(folder.parent_path());
+}
+
+TEST_CASE("parse_level_list reads one name per line") {
+    const auto names = game::parse_level_list("first.txt\r\n\n  second.txt \n\t\nthird.txt");
+    REQUIRE(names.size() == 3);
+    CHECK(names[0] == "first.txt");
+    CHECK(names[1] == "second.txt");
+    CHECK(names[2] == "third.txt");
+    CHECK(game::parse_level_list("").empty());
+}
+
+TEST_CASE("load_level_list reports a missing file") {
+    CHECK_FALSE(game::load_level_list(GAME_LEVELS_DIR "no_such_list.txt").has_value());
+}
+
+// The game sizes its window for the first level and needs every round to be
+// fair, so check each level in the shipped list for that.
+TEST_CASE("every level in the shipped list loads, fits the window and is fair") {
+    const auto names = game::load_level_list(GAME_LEVELS_DIR "levels.txt");
+    REQUIRE(names.has_value());
+    REQUIRE_FALSE(names->empty());
+
+    std::optional<game::Match> first;
+    for (const std::string& name : *names) {
+        CAPTURE(name);
+        const auto match = game::load_match_file(GAME_LEVELS_DIR + name);
+        REQUIRE(match.has_value());
+        if (!first) {
+            first = match;
+        }
+        CHECK(match->grid.width() == first->grid.width());
+        CHECK(match->grid.height() == first->grid.height());
+
+        // Both players get the same number of moves.
+        CHECK(match->moves_left % 2 == 0);
+
+        // Turning the board half a turn swaps the players and changes
+        // nothing else, so neither player has a better side.
+        const auto mirror = [&](Cell cell) {
+            return Cell{match->grid.width() - 1 - cell.x, match->grid.height() - 1 - cell.y};
+        };
+        CHECK(match->players[1] == mirror(match->players[0]));
+        for (int y = 0; y < match->grid.height(); ++y) {
+            for (int x = 0; x < match->grid.width(); ++x) {
+                CHECK(match->grid.at({x, y}) == match->grid.at(mirror({x, y})));
+            }
+        }
+        for (const Cell block : match->blocks) {
+            CHECK(std::ranges::find(match->blocks, mirror(block)) != match->blocks.end());
+        }
+    }
 }
 
 TEST_CASE("the shipped duel level loads") {

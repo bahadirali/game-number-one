@@ -21,6 +21,7 @@ enum class Key {
     R,
     Tab,
     Escape,
+    Enter,
     Count
 };
 

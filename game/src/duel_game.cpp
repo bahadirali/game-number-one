@@ -19,6 +19,7 @@ enum class Action {
     P2Left,
     P2Right,
     Pass,
+    NextLevel,
     ToggleAi,
     Restart,
     Quit,
@@ -89,6 +90,7 @@ void DuelGame::setup(engine::Input& input) {
     input.bind(Action::P2Left, Key::Left);
     input.bind(Action::P2Right, Key::Right);
     input.bind(Action::Pass, Key::Space);
+    input.bind(Action::NextLevel, Key::Enter);
     input.bind(Action::ToggleAi, Key::Tab);
     input.bind(Action::Restart, Key::R);
     input.bind(Action::Quit, Key::Escape);
@@ -103,11 +105,12 @@ void DuelGame::update(const engine::Input& input) {
         return;
     }
     if (input.just_pressed(Action::Restart)) {
-        // Each new round the other player goes first.
-        first_player_ = (first_player_ + 1) % kPlayerCount;
-        match_ = with_first_player(start_, first_player_);
-        ai_wait_ticks_ = 0;
-        message_ticks_ = 0;
+        start_round(level_);
+        return;
+    }
+    // Only once the round is over, so a stray Enter can't throw a game away.
+    if (is_over(match_) && input.just_pressed(Action::NextLevel)) {
+        start_round((level_ + 1) % levels_.size());
         return;
     }
     if (input.just_pressed(Action::ToggleAi)) {
@@ -147,10 +150,18 @@ void DuelGame::update(const engine::Input& input) {
         pass_turn(match_);
         turn_taken = true;
     } else {
-        for (const auto& move : kMoves[match_.current]) {
-            if (input.pressed(move.action)) {
-                turn_taken = play_move(match_, move.direction);
-                break;
+        // Against the AI there is only one human, so both sets of keys move
+        // them and they can use whichever they like. In a two-player game each
+        // player keeps to their own keys.
+        for (int p = 0; p < kPlayerCount && !turn_taken; ++p) {
+            if (p != match_.current && !ai_enabled_) {
+                continue;
+            }
+            for (const auto& move : kMoves[p]) {
+                if (input.pressed(move.action)) {
+                    turn_taken = play_move(match_, move.direction);
+                    break;
+                }
             }
         }
     }
@@ -158,6 +169,18 @@ void DuelGame::update(const engine::Input& input) {
     if (turn_taken && is_over(match_)) {
         announce_result();
     }
+}
+
+void DuelGame::start_round(std::size_t level) {
+    level_ = level;
+    // Each new round the other player goes first, whether it replays the
+    // same level or moves on to the next one.
+    first_player_ = (first_player_ + 1) % kPlayerCount;
+    match_ = with_first_player(levels_[level_], first_player_);
+    ai_wait_ticks_ = 0;
+    message_ticks_ = 0;
+    std::printf("Level %zu of %zu, player %d starts.\n", level_ + 1, levels_.size(),
+                first_player_ + 1);
 }
 
 void DuelGame::show_message(std::string text, int player) {
@@ -215,7 +238,7 @@ void DuelGame::render(engine::Renderer& renderer) {
         renderer.fill_rect({8.0f, pips_y, strip_w - 16.0f, pips_h},
                            winner ? kPlayerColors[*winner] : kDrawColor);
     } else {
-        const int total = start_.moves_left;
+        const int total = levels_[level_].moves_left;
         const int used = total - match_.moves_left;
         const float pip_w = strip_w / static_cast<float>(total);
         for (int i = 0; i < total; ++i) {
@@ -247,19 +270,34 @@ void DuelGame::render(engine::Renderer& renderer) {
                         score_bar.h + 6.0f},
                        kMiddleTickColor);
 
-    // The notice goes last, on top of everything, centred over the board.
-    if (message_ticks_ > 0) {
-        const float text_w = engine::Renderer::text_width(message_, kMessageScale);
-        const float text_h = engine::Renderer::text_height(kMessageScale);
-        const float text_x = (strip_w - text_w) / 2.0f;
-        const float text_y = kStripHeight + static_cast<float>(grid.height() * kCellSize) / 2.0f -
-                             text_h / 2.0f;
-        constexpr float kPadding = 12.0f;
-        renderer.fill_rect({text_x - kPadding, text_y - kPadding, text_w + 2.0f * kPadding,
-                            text_h + 2.0f * kPadding},
-                           kMessageBackColor);
-        renderer.draw_text(text_x, text_y, message_, kPlayerColors[message_player_], kMessageScale);
+    // Notices go last, on top of everything. Once the round is over the
+    // result stays up until the next round starts.
+    if (is_over(match_)) {
+        const auto winner = leader(match_);
+        const std::string result =
+            winner ? "Player " + std::to_string(*winner + 1) + " wins!" : "It's a draw!";
+        const std::string next = levels_.size() > 1 ? "Enter: next level" : "Enter: play again";
+        draw_notice(renderer, result + "  " + next, winner ? kPlayerColors[*winner] : kDrawColor);
+    } else if (message_ticks_ > 0) {
+        draw_notice(renderer, message_, kPlayerColors[message_player_]);
     }
+}
+
+// Draws `text` on a dark panel, centred over the board.
+void DuelGame::draw_notice(engine::Renderer& renderer, const std::string& text,
+                           engine::Color color) const {
+    const Grid& grid = match_.grid;
+    const float board_w = static_cast<float>(grid.width() * kCellSize);
+    const float text_w = engine::Renderer::text_width(text, kMessageScale);
+    const float text_h = engine::Renderer::text_height(kMessageScale);
+    const float text_x = (board_w - text_w) / 2.0f;
+    const float text_y =
+        kStripHeight + static_cast<float>(grid.height() * kCellSize) / 2.0f - text_h / 2.0f;
+    constexpr float kPadding = 12.0f;
+    renderer.fill_rect({text_x - kPadding, text_y - kPadding, text_w + 2.0f * kPadding,
+                        text_h + 2.0f * kPadding},
+                       kMessageBackColor);
+    renderer.draw_text(text_x, text_y, text, color, kMessageScale);
 }
 
 } // namespace game

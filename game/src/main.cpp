@@ -2,6 +2,7 @@
 #include <cstring>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <engine/app.h>
 
@@ -34,22 +35,49 @@ int run_puzzle() {
     return engine::run(config, puzzle);
 }
 
-// Plays the duel level in levels/<file_name>, next to the executable.
-int run_duel(const std::string& file_name) {
-    const std::string path = engine::base_path() + "levels/" + file_name;
-    auto match = game::load_match_file(path);
-    if (!match) {
-        std::fprintf(stderr, "Couldn't load the level %s\n", path.c_str());
+// Plays the duel levels in levels/, next to the executable, in the given order.
+int run_duel(const std::vector<std::string>& file_names) {
+    std::vector<game::Match> levels;
+    for (const std::string& file_name : file_names) {
+        const std::string path = engine::base_path() + "levels/" + file_name;
+        auto match = game::load_match_file(path);
+        if (!match) {
+            std::fprintf(stderr, "Couldn't load the level %s\n", path.c_str());
+            return 1;
+        }
+        // The window is sized once, for the first level.
+        if (!levels.empty() && (match->grid.width() != levels.front().grid.width() ||
+                                match->grid.height() != levels.front().grid.height())) {
+            std::fprintf(stderr, "The level %s isn't the same size as the first level.\n",
+                         path.c_str());
+            return 1;
+        }
+        levels.push_back(std::move(*match));
+    }
+    if (levels.empty()) {
+        std::fprintf(stderr, "There are no levels to play.\n");
         return 1;
     }
-    const auto config = make_config(match->grid, 1);  // one extra row for the move and score strips
-    game::DuelGame duel(std::move(*match));
+    // One extra row for the move and score strips.
+    const auto config = make_config(levels.front().grid, 1);
+    game::DuelGame duel(std::move(levels));
     return engine::run(config, duel);
+}
+
+// Plays the levels listed in levels/levels.txt.
+int run_duel_list() {
+    const std::string path = engine::base_path() + "levels/levels.txt";
+    const auto file_names = game::load_level_list(path);
+    if (!file_names) {
+        std::fprintf(stderr, "Couldn't read the level list %s\n", path.c_str());
+        return 1;
+    }
+    return run_duel(*file_names);
 }
 
 } // namespace
 
-// Starts the two-player duel. Options:
+// Starts the two-player duel with the levels in levels/levels.txt. Options:
 //   --puzzle      the one-player puzzle room instead
 //   --stuck-test  a tiny duel board for trying out the automatic pass
 int main(int argc, char** argv) {
@@ -57,7 +85,7 @@ int main(int argc, char** argv) {
         return run_puzzle();
     }
     if (argc > 1 && std::strcmp(argv[1], "--stuck-test") == 0) {
-        return run_duel("stuck_test.txt");
+        return run_duel({"stuck_test.txt"});
     }
-    return run_duel("duel.txt");
+    return run_duel_list();
 }

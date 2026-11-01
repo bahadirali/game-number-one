@@ -43,6 +43,25 @@ std::optional<int> parse_moves_header(std::string_view line) {
     return moves;
 }
 
+// Reads a whole file. `path` is UTF-8, as engine::base_path() returns it.
+std::optional<std::string> read_text_file(const std::string& path) {
+    // A plain std::string path would be read in the Windows code page, so a
+    // folder with non-ASCII letters in its name wouldn't be found. Going
+    // through char8_t tells std::filesystem the bytes are UTF-8.
+    // (std::filesystem::u8path does the same, but is deprecated in C++20.)
+    const std::u8string utf8(reinterpret_cast<const char8_t*>(path.data()), path.size());
+
+    // Binary mode reads the bytes as they are; the parsers deal with either
+    // kind of line ending themselves.
+    std::ifstream file(std::filesystem::path(utf8), std::ios::binary);
+    if (!file) {
+        return std::nullopt;
+    }
+    std::ostringstream contents;
+    contents << file.rdbuf();
+    return contents.str();
+}
+
 } // namespace
 
 std::optional<Match> parse_match_file(std::string_view contents) {
@@ -62,21 +81,33 @@ std::optional<Match> parse_match_file(std::string_view contents) {
 }
 
 std::optional<Match> load_match_file(const std::string& path) {
-    // A plain std::string path would be read in the Windows code page, so a
-    // folder with non-ASCII letters in its name wouldn't be found. Going
-    // through char8_t tells std::filesystem the bytes are UTF-8.
-    // (std::filesystem::u8path does the same, but is deprecated in C++20.)
-    const std::u8string utf8(reinterpret_cast<const char8_t*>(path.data()), path.size());
-
-    // Binary mode reads the bytes as they are; parse_match_file deals with
-    // either kind of line ending itself.
-    std::ifstream file(std::filesystem::path(utf8), std::ios::binary);
-    if (!file) {
+    const auto contents = read_text_file(path);
+    if (!contents) {
         return std::nullopt;
     }
-    std::ostringstream contents;
-    contents << file.rdbuf();
-    return parse_match_file(contents.str());
+    return parse_match_file(*contents);
+}
+
+std::vector<std::string> parse_level_list(std::string_view contents) {
+    std::vector<std::string> names;
+    for (std::string_view line : split_lines(contents)) {
+        constexpr std::string_view kSpaces = " \t";
+        const auto first = line.find_first_not_of(kSpaces);
+        if (first == std::string_view::npos) {
+            continue;
+        }
+        const auto last = line.find_last_not_of(kSpaces);
+        names.emplace_back(line.substr(first, last - first + 1));
+    }
+    return names;
+}
+
+std::optional<std::vector<std::string>> load_level_list(const std::string& path) {
+    const auto contents = read_text_file(path);
+    if (!contents) {
+        return std::nullopt;
+    }
+    return parse_level_list(*contents);
 }
 
 } // namespace game
